@@ -1,0 +1,51 @@
+{
+	"info": {
+		"_postman_id": "38e0590f-0e0e-4d0d-8bab-547fa60cbf3f",
+		"name": "Adekanmbi Dayo Project II",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Filter Image",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "Password@",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "Optimus",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://udagram-dev22.us-east-1.elasticbeanstalk.com/filteredimage?image_url=https://images.pexels.com/photos/12405196/pexels-photo-12405196.jpeg",
+					"protocol": "http",
+					"host": [
+						"udagram-dev22",
+						"us-east-1",
+						"elasticbeanstalk",
+						"com"
+					],
+					"path": [
+						"filteredimage"
+					],
+					"query": [
+						{
+							"key": "image_url",
+							"value": "https://images.pexels.com/photos/12405196/pexels-photo-12405196.jpeg"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

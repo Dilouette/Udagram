@@ -15,5 +15,5 @@ Prevent requests without valid authentication headers.
 > Sample credentials username : Optimus, password : Password@
 
 ### EB Domain Name
-
-> http://udagram-dev22.us-east-1.elasticbeanstalk.com/filteredimage?image_url=https://images.pexels.com/photos/12405196/pexels-photo-12405196.jpeg
+> A postman collection is also in the root of the repository for easy testing.
+> [Elastic BeanStalk URL]"(http://udagram-dev22.us-east-1.elasticbeanstalk.com/filteredimage?image_url=https://images.pexels.com/photos/12405196/pexels-photo-12405196.jpeg)"
