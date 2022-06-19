@@ -1,8 +1,9 @@
-import express from 'express';
+import express, { NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
 import { Request, Response } from 'express';
+
 
 (async () => {
 
@@ -11,24 +12,39 @@ import { Request, Response } from 'express';
 
   // Set the network port
   const port = process.env.PORT || 8080;
+
+  // Get credentials from config
+  const config = require('config');
+  const username = config.get('server.username');
+  const password = config.get('server.password');
+
+  // Require validator to validate url
+  var validator = require('validator');
   
   // Use the body parser middleware for post requests
   app.use(bodyParser.json());
 
-  // Use basic authentication to secure endpoints
-  app.use((req, res, next) => {
-    const auth = {
-      username: 'Optimus',
-      password: 'Password@'
+  
+
+  function requreAuth(req: Request, res: Response, next: NextFunction) {
+
+    if (!req.headers || !req.headers.authorization) {
+      return res.status(401).send({ message: 'Authentication required! No authorization headers in your request' });
     }
+    
+    const auth = {
+      username: username,
+      password: password,
+    }
+
     const [, b64auth = ''] = (req.headers.authorization || '').split(' ')
-    const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':')
-    if (login && password && login === auth.username && password === auth.password) {
+    const [usr, pwd] = Buffer.from(b64auth, 'base64').toString().split(':')
+    if (usr && pwd && usr === auth.username && pwd === auth.password) {
       return next()
     }
     res.set('WWW-Authenticate', 'Basic realm="401"')
-    res.status(401).send('Authentication required.')
-  })
+    res.status(401).send('Invalid username or password')
+  }
 
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
   // GET /filteredimage?image_url={{URL}}
@@ -48,44 +64,58 @@ import { Request, Response } from 'express';
 
   //! END @TODO1
 
-  app.get( "/filteredimage", async ( req: Request, res: Response ) => {
+  app.get( "/filteredimage", requreAuth, async ( req: Request, res: Response ) => {
 
     let { image_url } = req.query;
 
-    // Check to make sure image URL is in the query string
+    // Check for image_url in the query string
     if (!image_url) {
-      //Respond with a bad request (400) if image_url is not found in query parameter
-      return res.status(400).send({ message: "The query parameter 'image_url' was not in your request please add the 'image_url'"});
-    } 
+      return res.status(400).send({
+        success: false,
+        status: 'Bad Request',
+        message: `The image_url query parameter was not present. Please add image_url`
+      });
+    }
 
-    // Filter the image from the image_url parameter
-    filterImageFromURL(image_url)
-      .then(filteredpath => {
-        // Respond with file
-        res.status(200).sendFile(filteredpath, error => {
-          // Catch errors
-          if (error) {
-            return res.status(500).send( { message: error.message })
-          }
-          else {
-            // Delete local file
-            deleteLocalFiles([filteredpath]);
-          }
-        });
-      })
-      .catch(e => {
-        return res.status(422).send( { message: e.message } );
-      }); 
-    
+    // Confirm image_url is a valid URL
+    if (!validator.isURL(image_url)) {
+      return res.status(422).send({
+        success: false,
+        status: 'Unprocessible Request',
+        message: `The supplied image URL is invalid. Please supply valid image URL`
+      });
+    }
+
+    // Add filter to supplied image
+    try {
+      const filteredImage = await filterImageFromURL(image_url);
+
+      res.sendFile(filteredImage, async (e: Error) => {
+        deleteLocalFiles([filteredImage]);
+        if (e) {
+          res.status(500).send({
+            success: false,
+            status: 'Server Error',
+            message: 'An unexpected exception occurred while returning the filtered image.',
+            data: `${e}`,
+          });
+        }
+      });
+    } catch (e) {
+      res.status(500).send({
+        success: false,
+        status: 'Server Error',
+        message: 'An unexpected exception occurred while processing your image. Please try again' ,
+        data: `${e}`,
+      });
+    }    
   });
-
   
   // Root Endpoint
   // Displays a simple message to the user
   app.get( "/", async ( req, res ) => {
     res.send("try GET /filteredimage?image_url={{}}")
-  } );
-  
+  } );  
 
   // Start the Server
   app.listen( port, () => {
